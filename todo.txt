@@ -1,0 +1,3 @@
+Implement route protection using JWT tokens to secure certain routes.
+Add password reset functionality.
+Implement user roles (e.g., admin, user) if needed.
