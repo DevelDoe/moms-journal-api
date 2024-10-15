@@ -22,9 +22,17 @@ router.post("/", auth, async (req, res) => {
 			user: req.user.id, // Attach the order to the logged-in user
 		});
 
-		const order = await newOrder.save();
-		res.json(order);
+		const savedOrder = await newOrder.save();
+		res.status(201).json(savedOrder);
 	} catch (err) {
+		// Catch duplicate key error (code 11000)
+		if (err.code === 11000) {
+			return res
+				.status(400)
+				.json({
+					error: "Duplicate order: An order with the same date and time already exists.",
+				});
+		}
 		console.error(err.message);
 		res.status(500).send("Server error");
 	}

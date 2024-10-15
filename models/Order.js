@@ -1,42 +1,38 @@
-// models/Order.js
 const mongoose = require('mongoose');
 
-// Define the Order schema
-const OrderSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema({
+  symbol: {
+    type: String,
+    required: true,
+  },
   side: {
     type: String,
-    required: true,
-    enum: ['buy', 'sell'], // To restrict it to buy or sell
-  },
-  time: {
-    type: String,
-    required: true,
-  },
-  price: {
-    type: Number,
     required: true,
   },
   quantity: {
     type: Number,
     required: true,
   },
-  symbol: {
-    type: String,
+  price: {
+    type: Number,
+    required: true,
+  },
+  date: {
+    type: Date, // This includes both date and time
     required: true,
   },
   account: {
     type: String,
     required: true,
   },
-  date: {
-    type: Date,
-    required: true,
-  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true, // Attach the order to a specific user
-  },
+    required: true,
+  }
 });
 
-module.exports = mongoose.model('Order', OrderSchema);
+// Add unique index on the date field to avoid duplicate entries at the exact same time
+orderSchema.index({ date: 1, symbol: 1, account: 1 }, { unique: true });
+
+module.exports = mongoose.model('Order', orderSchema);

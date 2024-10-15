@@ -1,3 +1,7 @@
-Implement route protection using JWT tokens to secure certain routes.
 Add password reset functionality.
 Implement user roles (e.g., admin, user) if needed.
+
+add readme for stuff that you wouldent know if your new ie. mongose key removal, node version.
+
+
+telegram bot
