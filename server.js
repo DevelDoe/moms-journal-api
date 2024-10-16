@@ -40,6 +40,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes); // Use the order routes
 app.use(express.static(path.join(__dirname, "dist"))); // Serve static files from the "dist" directory
 app.get("*", (req, res) => {
+	F;
 	res.sendFile(path.join(__dirname, "dist", "index.html"));
 	// Handle client-side routing, return the index.html file for all other routes
 });
