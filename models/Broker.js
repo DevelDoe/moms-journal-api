@@ -77,5 +77,3 @@ const BrokerSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Broker", BrokerSchema);
-
-test
