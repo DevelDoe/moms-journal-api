@@ -1,6 +1,7 @@
 // models/User.js
+
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const bcrypt = require('bcryptjs');
 
 // Define the User schema
 const UserSchema = new mongoose.Schema({
@@ -20,9 +21,30 @@ const UserSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
+	tax_rate: {
+		type: Number,
+		default: 0,
+		min: 0,
+		max: 100,
+	},
+	accounts: [
+		{
+			type: { type: String, required: true },
+			number: { type: String, required: true },
+			balance: { type: Number, default: 0 },
+		},
+	],
+	broker: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "Broker",
+	},
+	role: {
+		type: String,
+		enum: ["user", "admin"],
+		default: "user", // Default role is 'user'
+	},
 });
 
-// Hash the password before saving the user
 UserSchema.pre("save", async function (next) {
 	if (!this.isModified("password")) {
 		return next();
@@ -31,5 +53,9 @@ UserSchema.pre("save", async function (next) {
 	this.password = await bcrypt.hash(this.password, salt);
 	next();
 });
+
+UserSchema.methods.matchPassword = async function (enteredPassword) {
+	return await bcrypt.compare(enteredPassword, this.password);
+};
 
 module.exports = mongoose.model("User", UserSchema);

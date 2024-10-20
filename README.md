@@ -9,3 +9,8 @@ db.orders.deleteMany({})
 db.orders.drop()
 ## show
 db.orders.find().pretty()
+
+
+
+start mongo with replica
+mongod --replSet rs0 --dbpath "C:/Program Files/MongoDB/Server/4.0/data"

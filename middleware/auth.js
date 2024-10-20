@@ -1,24 +1,32 @@
-// middleware/auth.js
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");  // Import User model for role check
 
 // Middleware to protect routes
-module.exports = function (req, res, next) {
-	// Get the token from the header
-	const token = req.header("Authorization");
+module.exports = async function (req, res, next) {
+    // Get the token from the header
+    const token = req.header("Authorization");
 
-	// Check if no token
-	if (!token) {
-		return res
-			.status(401)
-			.json({ message: "No token, authorization denied" });
-	}
+    // Check if no token is provided
+    if (!token) {
+        return res.status(401).json({ message: "No token, authorization denied" });
+    }
 
-	// Verify token
-	try {
-		const decoded = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
-		req.user = decoded; // Attach the decoded user to the request object
-		next(); // Proceed to the next middleware or route handler
-	} catch (err) {
-		res.status(401).json({ message: "Token is not valid" });
-	}
+    try {
+        // Verify and decode the token
+        const decoded = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
+        req.user = decoded;  // Attach the decoded token data to req.user
+
+        // Fetch the user from the database using the decoded ID
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        req.user = user;  // Attach full user data to request
+
+        next();  // Proceed to the next middleware or route handler
+    } catch (err) {
+        console.error("Auth error:", err);
+        return res.status(500).json({ msg: 'Server Error' });
+    }
 };
