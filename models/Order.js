@@ -18,7 +18,7 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   date: {
-    type: Date, 
+    type: Date,
     required: true,
   },
   account: {
@@ -29,9 +29,11 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-  }
+  },
+  batchHash: {
+    type: String,
+    required: true, // Add this to store the batch hash
+  },
 });
-
-orderSchema.index({ date: 1, symbol: 1, account: 1, side: 1, price: 1, quantity: 1 }, { unique: true });
 
 module.exports = mongoose.model('Order', orderSchema);

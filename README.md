@@ -14,3 +14,25 @@ db.orders.find().pretty()
 
 start mongo with replica
 mongod --replSet rs0 --dbpath "C:/Program Files/MongoDB/Server/4.0/data"
+
+Add the Replica Set Configuration:
+
+Look for the section labeled replication. If it doesn’t exist, you can add it yourself. Modify or add the following:
+yaml
+
+replication:
+  replSetName: rs0
+
+This ensures that MongoDB will always start with the replica set rs0 every time it is started.
+
+Restart MongoDB Service:
+
+After editing the configuration file, you need to restart MongoDB for the changes to take effect.
+
+On Windows:
+
+Open Command Prompt as an administrator and run:
+bash
+
+net stop MongoDB
+net start MongoDB

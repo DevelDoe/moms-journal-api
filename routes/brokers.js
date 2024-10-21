@@ -108,6 +108,9 @@ router.post("/:id/accounts", auth, async (req, res) => {
 		withdrawal_fee,
 		extended_hours_trading_fee,
 		minimumDeposit,
+		leverage,
+		regulatory_fee,
+		overnight_fee,
 	} = req.body;
 
 	// Ensure that type is provided as it's required
@@ -135,6 +138,9 @@ router.post("/:id/accounts", auth, async (req, res) => {
 			withdrawal_fee: withdrawal_fee ?? undefined,
 			extended_hours_trading_fee: extended_hours_trading_fee ?? undefined,
 			minimumDeposit: minimumDeposit ?? undefined,
+			leverage: leverage ?? undefined,
+			regulatory_fee: regulatory_fee ?? undefined,
+			overnight_fee: overnight_fee ?? undefined,
 		});
 
 		await broker.save();
@@ -145,87 +151,97 @@ router.post("/:id/accounts", auth, async (req, res) => {
 	}
 });
 
-// Update an account type for a broker
-// @route   PUT /api/brokers/:id/accounts/:accountType
+
+// @route   PUT /api/brokers/:id/accounts/:accountId
 // @desc    Update an account type for a broker (Admins only)
 // @access  Private
-router.put("/:id/accounts/:accountType", auth, async (req, res) => {
+router.put("/:id/accounts/:accountId", auth, async (req, res) => {
 	if (req.user.role !== "admin") {
-		return res.status(403).json({ msg: "Access denied: Admins only." });
+	  return res.status(403).json({ msg: "Access denied: Admins only." });
 	}
-
+  
 	const {
-		type,
-		rate_per_share,
-		min_amount,
-		max_amount,
-		percentage_rate,
-		ecn_fees,
-		inactivity_fee,
-		market_data_fee,
-		platform_fee,
-		withdrawal_fee,
-		extended_hours_trading_fee,
-		minimumDeposit,
+	  type,
+	  rate_per_share,
+	  min_amount,
+	  max_amount,
+	  percentage_rate,
+	  ecn_fees,
+	  inactivity_fee,
+	  market_data_fee,
+	  platform_fee,
+	  withdrawal_fee,
+	  extended_hours_trading_fee,
+	  minimumDeposit,
+	  leverage,
+	  regulatory_fee,
+	  overnight_fee,
 	} = req.body;
-
+  
 	try {
-		const broker = await Broker.findById(req.params.id);
-		if (!broker) {
-			return res.status(404).json({ msg: "Broker not found" });
-		}
-
-		// Find the account to update
-		const account = broker.accountTypes.find((account) => account.type === req.params.accountType);
-		if (!account) {
-			return res.status(404).json({ msg: "Account type not found" });
-		}
-
-		// Update account fields
-		account.type = type || account.type;
-		account.rate_per_share = rate_per_share;
-		account.min_amount = min_amount;
-		account.max_amount = max_amount;
-		account.percentage_rate = percentage_rate;
-		account.ecn_fees = ecn_fees;
-		account.inactivity_fee = inactivity_fee;
-		account.market_data_fee = market_data_fee;
-		account.platform_fee = platform_fee;
-		account.withdrawal_fee = withdrawal_fee;
-		account.extended_hours_trading_fee = extended_hours_trading_fee;
-		account.minimumDeposit = minimumDeposit;
-
-		await broker.save();
-		res.status(200).json(broker);
+	  const broker = await Broker.findById(req.params.id);
+	  if (!broker) {
+		return res.status(404).json({ msg: "Broker not found" });
+	  }
+  
+	  // Find the account by its unique ID, not by type
+	  const account = broker.accountTypes.id(req.params.accountId);
+	  if (!account) {
+		return res.status(404).json({ msg: "Account not found" });
+	  }
+  
+	  // Update the account fields
+	  account.type = type || account.type;
+	  account.rate_per_share = rate_per_share ?? account.rate_per_share;
+	  account.min_amount = min_amount ?? account.min_amount;
+	  account.max_amount = max_amount ?? account.max_amount;
+	  account.percentage_rate = percentage_rate ?? account.percentage_rate;
+	  account.ecn_fees = ecn_fees ?? account.ecn_fees;
+	  account.inactivity_fee = inactivity_fee ?? account.inactivity_fee;
+	  account.market_data_fee = market_data_fee ?? account.market_data_fee;
+	  account.platform_fee = platform_fee ?? account.platform_fee;
+	  account.withdrawal_fee = withdrawal_fee ?? account.withdrawal_fee;
+	  account.extended_hours_trading_fee = extended_hours_trading_fee ?? account.extended_hours_trading_fee;
+	  account.minimumDeposit = minimumDeposit ?? account.minimumDeposit;
+	  account.leverage = leverage ?? account.leverage;
+	  account.regulatory_fee = regulatory_fee ?? account.regulatory_fee;
+	  account.overnight_fee = overnight_fee ?? account.overnight_fee;
+  
+	  // Save the updated broker with the modified account
+	  await broker.save();
+	  res.status(200).json(broker);
 	} catch (err) {
-		console.error("Error updating account type:", err.message);
-		res.status(500).send("Server error");
+	  console.error("Error updating account:", err.message);
+	  res.status(500).send("Server error");
 	}
-});
+  });
+  
+  
 
-// @route   DELETE /api/brokers/:id/accounts/:accountType
-// @desc    Delete an account type from a broker (Admins only)
+
+// @route   DELETE /api/brokers/:id/accounts/:accountId
+// @desc    Delete an account type from a broker by account _id (Admins only)
 // @access  Private
-router.delete("/:id/accounts/:accountType", auth, async (req, res) => {
-	if (req.user.role !== "admin") {
-		return res.status(403).json({ msg: "Access denied: Admins only." });
-	}
+router.delete("/:id/accounts/:accountId", auth, async (req, res) => {
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ msg: "Access denied: Admins only." });
+    }
 
-	try {
-		const broker = await Broker.findById(req.params.id);
-		if (!broker) {
-			return res.status(404).json({ msg: "Broker not found" });
-		}
+    try {
+        const broker = await Broker.findById(req.params.id);
+        if (!broker) {
+            return res.status(404).json({ msg: "Broker not found" });
+        }
 
-		// Filter out the account to delete
-		broker.accountTypes = broker.accountTypes.filter((account) => account.type !== req.params.accountType);
+        // Filter out the account to delete by _id
+        broker.accountTypes = broker.accountTypes.filter((account) => account._id.toString() !== req.params.accountId);
 
-		await broker.save();
-		res.json({ msg: "Account deleted successfully." });
-	} catch (err) {
-		console.error("Error deleting account:", err.message);
-		res.status(500).send("Server error");
-	}
+        await broker.save();
+        res.json({ msg: "Account deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting account:", err.message);
+        res.status(500).send("Server error");
+    }
 });
 
 // @route   GET /api/brokers/account/:accountType
