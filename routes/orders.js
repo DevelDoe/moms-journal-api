@@ -131,25 +131,4 @@ router.get("/", auth, async (req, res) => {
 	}
 });
 
-// @route   GET /api/orders/historical
-// @desc    Get trade orders from the last 7 days for the authenticated user
-// @access  Private
-router.get("/historical", auth, async (req, res) => {
-	const today = new Date(); // Get the current date
-	const sevenDaysAgo = new Date(today);
-	sevenDaysAgo.setDate(today.getDate() - 7); // Calculate the date 7 days ago
-
-	try {
-		// Fetch orders placed in the last 7 days
-		const historicalTrades = await Order.find({
-			date: { $gte: sevenDaysAgo, $lt: today }, // Filter for orders within the last 7 days
-			user: req.user.id, // Only fetch orders for the authenticated user
-		});
-		res.json(historicalTrades); // Return the orders to the client
-	} catch (err) {
-		console.error("Error fetching historical orders:", err.message); // Log the error
-		res.status(500).send("Server error"); // Return a server error to the client
-	}
-});
-
 module.exports = router;
