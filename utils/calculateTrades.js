@@ -10,10 +10,10 @@ function calculateTrades(orders) {
     orders.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const trades = [];
-    const positions = {}; // Track positions by symbol and accountId
-
+    const positions = {}; // Track positions by symbol 
+    
     for (const order of orders) {
-        const key = `${order.symbol}-${order.accountId}`; // Using accountId here
+        const key = order.symbol; // Use only symbol as the key
 
         // Initialize position tracking for this symbol/account if it doesn't exist
         if (!positions[key]) {
@@ -36,8 +36,6 @@ function calculateTrades(orders) {
 
                 trades.push({
                     symbol: order.symbol,
-                    accountId: order.accountId, // Include accountId for referencing
-                    accountNr: order.accountNr, // Include accountNr for display purposes
                     quantity: quantityToCover,
                     shortPrice: currentPosition.avgPrice,
                     coverPrice: order.price,
@@ -68,8 +66,6 @@ function calculateTrades(orders) {
 
                 trades.push({
                     symbol: order.symbol,
-                    accountId: order.accountId, // Include accountId for referencing
-                    accountNr: order.accountNr, // Include accountNr for display purposes
                     quantity: quantityToSell,
                     buyPrice: currentPosition.avgPrice,
                     sellPrice: order.price,
