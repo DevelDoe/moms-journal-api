@@ -95,9 +95,6 @@ router.post("/", auth, async (req, res) => {
 			await session.commitTransaction();
 			res.status(201).json({
 				message: "Orders, trades, and summaries saved successfully.",
-				orders: newOrders,
-				trades: newTrades,
-				summaries: newSummaries,
 			});
 		} catch (err) {
 			await session.abortTransaction();
