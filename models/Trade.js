@@ -28,10 +28,6 @@ const TradeSchema = new Schema({
         type: Date,
         required: true
     },
-    accountNr: { // New field for the account number
-        type: String, // Keep this as a string for account number representation
-        required: true,
-    }
 });
 
 module.exports = mongoose.model('Trade', TradeSchema);
