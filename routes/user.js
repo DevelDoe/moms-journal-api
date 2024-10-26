@@ -30,12 +30,6 @@ router.put("/update-profile", auth, async (req, res) => {
 			return res.status(404).json({ message: "User not found" });
 		}
 
-		// Update the user's profile fields
-		user.tax_rate = tax || user.tax_rate;
-		user.commission_rate = commission || user.commission_rate;
-		user.commission_min = commission_min || user.commission_min;
-		user.commission_max = commission_max || user.commission_max;
-
 		// Save the updated user to the database
 		await user.save();
 
