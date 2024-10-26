@@ -14,7 +14,7 @@ const TradeSchema = new Schema({
     side: {
         type: String,
         required: true,
-        enum: ['BUY', 'SELL', 'SHORT', 'COVER']  // Restricting values to valid trade sides
+        enum: ['BUY', 'SELL', 'BOT', 'SLD', 'long_sell', 'short_cover'], // Add all valid side options here
     },
     quantity: {
         type: Number,
