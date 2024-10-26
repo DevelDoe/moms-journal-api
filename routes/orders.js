@@ -6,6 +6,7 @@ const Trade = require("../models/Trade");
 const auth = require("../middleware/auth");
 const calculateTrades = require("../utils/calculateTrades");
 const calculateSummary = require("../utils/calculateSummary");
+const TradeSummary = require("../models/TradeSummary");
 
 const router = express.Router();
 
