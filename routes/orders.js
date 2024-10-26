@@ -93,7 +93,10 @@ router.post("/", auth, async (req, res) => {
 			await TradeSummary.insertMany(newSummaries, { session });
 
 			await session.commitTransaction();
-			res.status(201).json({ message: "Orders saved successfully." });
+			res.status(201).json({
+				message: "Orders saved successfully.",
+				trades: newTrades,  // Send back the trades
+			});
 		} catch (err) {
 			await session.abortTransaction();
 			console.error("Error saving orders, trades, and summaries:", err.message);
