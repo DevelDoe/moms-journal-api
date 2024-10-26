@@ -24,15 +24,23 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-router.get('/:accountId', auth, async (req, res) => {
-    const { accountId } = req.params;
+// @route   GET /api/trades/historical
+// @desc    Get trade orders from the last 7 days for the authenticated user
+// @access  Private
+router.get('/historical', auth, async (req, res) => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
 
     try {
-        const trades = await Trade.find({ accountId }); // Fetch trades by accountId
-        res.json(trades);
-    } catch (error) {
-        console.error("Error fetching trades:", error);
-        res.status(500).json({ error: "Server error" });
+        const historicalTrades = await Trade.find({
+            date: { $gte: sevenDaysAgo, $lt: today },
+            user: req.user.id,
+        });
+        res.json(historicalTrades);
+    } catch (err) {
+        console.error("Error fetching historical trades:", err.message);
+        res.status(500).send("Server error");
     }
 });
 
