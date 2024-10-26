@@ -131,16 +131,6 @@ router.get("/", auth, async (req, res) => {
 	}
 });
 
-router.get("/:accountId", auth, async (req, res) => {
-  const { accountId } = req.params;
-  try {
-      const orders = await Order.find({ user: req.user.id, accountId });
-      res.json(orders);
-  } catch (error) {
-      res.status(500).json({ msg: "Server error", error });
-  }
-});
-
 // @route   GET /api/orders/historical
 // @desc    Get trade orders from the last 7 days for the authenticated user
 // @access  Private
