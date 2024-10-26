@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Trade = require('../models/Trade');
 const auth = require('../middleware/auth');
-
 const TradeSummary = require("../models/TradeSummary");
 
 // @route   GET /api/trades
