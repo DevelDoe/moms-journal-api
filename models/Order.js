@@ -26,15 +26,6 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  accountId: { // Reference to the account
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountType', // Assuming you have an AccountType model
-    required: true
-  },
-  accountNr: { // New field for the account number
-    type: String, // Keep this as a string for account number representation
-    required: true, // Make this required if you want to enforce it
-  },
   batchHash: {
     type: String,
     required: true, // Store the batch hash
