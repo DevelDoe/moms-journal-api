@@ -11,11 +11,6 @@ const TradeSchema = new Schema({
         type: String,
         required: true
     },
-    accountId: { // Reference to the account
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'AccountType',
-        required: true
-    },
     side: {
         type: String,
         required: true
