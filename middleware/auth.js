@@ -12,7 +12,7 @@ module.exports = async function (req, res, next) {
     }
 
     try {
-        // Verify and decode the token
+        // Verify and decode the token (split "Bearer" prefix if present)
         const decoded = jwt.verify(token.split(" ")[1], process.env.JWT_SECRET);
         req.user = decoded;  // Attach the decoded token data to req.user
 
@@ -27,6 +27,13 @@ module.exports = async function (req, res, next) {
         next();  // Proceed to the next middleware or route handler
     } catch (err) {
         console.error("Auth error:", err);
+
+        // Check for specific token expiration error
+        if (err.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Token expired", expiredAt: err.expiredAt });
+        }
+
+        // Generic server error response for other issues
         return res.status(500).json({ msg: 'Server Error' });
     }
 };
