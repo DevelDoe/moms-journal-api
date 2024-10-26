@@ -3,6 +3,8 @@ const router = express.Router();
 const Trade = require('../models/Trade');
 const auth = require('../middleware/auth');
 
+const TradeSummary = require("../models/TradeSummary");
+
 // @route   GET /api/trades
 // @desc    Get all trades for the authenticated user
 // @access  Private
