@@ -21,25 +21,6 @@ const UserSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
-	tax_rate: {
-		type: Number,
-		default: 0,
-		min: 0,
-		max: 100,
-	},
-	accounts: [
-		{
-			type: { type: String, required: true },
-			number: { type: String, required: true },
-			balance: { type: Number, default: 0 },
-			broker: {
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Broker",
-			},
-			accountId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountType", required: true },
-			specifications: { type: Object } // New field to store account specifications
-		},
-	],
 	role: {
 		type: String,
 		enum: ["user", "admin"],
