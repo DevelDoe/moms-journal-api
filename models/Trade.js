@@ -13,21 +13,40 @@ const TradeSchema = new Schema({
     },
     side: {
         type: String,
-        required: true
+        required: true,
+        enum: ['BUY', 'SELL', 'SHORT', 'COVER']  // Restricting values to valid trade sides
     },
     quantity: {
         type: Number,
         required: true
     },
-    buyPrice: Number,
-    sellPrice: Number,
-    shortPrice: Number,
-    coverPrice: Number,
-    profitLoss: Number,
+    buyPrice: {
+        type: Number,
+        default: null  // Default to null if value is calculated later
+    },
+    sellPrice: {
+        type: Number,
+        default: null
+    },
+    shortPrice: {
+        type: Number,
+        default: null
+    },
+    coverPrice: {
+        type: Number,
+        default: null
+    },
+    profitLoss: {
+        type: Number,
+        default: null
+    },
     date: {
         type: Date,
         required: true
-    },
-});
+    }
+}, { timestamps: true });  // Automatically add `createdAt` and `updatedAt` fields
+
+// Index for performance optimization when querying by user, symbol, or date
+TradeSchema.index({ user: 1, symbol: 1, date: -1 });
 
 module.exports = mongoose.model('Trade', TradeSchema);
