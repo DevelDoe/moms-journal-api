@@ -47,14 +47,12 @@ router.post("/", auth, async (req, res) => {
 		  return res.status(400).json({ error: "Duplicate batch detected. No orders were saved." });
 		}
   
-		// Create new order objects, including accountId and accountNr
+		// Create new order objects
 		const newOrders = orders.map((order) => ({
 		  side: order.side,
 		  price: order.price,
 		  quantity: order.quantity,
 		  symbol: order.symbol,
-		  accountId: order.accountId, // Use accountId for reference
-		  accountNr: order.accountNr, // Include the account number for display
 		  date: order.date,
 		  user: req.user.id,
 		  batchHash: batchHash,
@@ -69,8 +67,6 @@ router.post("/", auth, async (req, res) => {
 		const newTrades = trades.map((trade) => ({
 		  user: req.user.id,
 		  symbol: trade.symbol,
-		  accountId: trade.accountId, // Include the account ID for the trade
-		  accountNr: trade.accountNr, // Include the account number for the trade
 		  side: trade.side,
 		  quantity: trade.quantity,
 		  buyPrice: trade.buyPrice,
