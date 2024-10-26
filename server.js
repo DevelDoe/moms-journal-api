@@ -101,11 +101,13 @@ const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const ordersRoutes = require("./routes/orders");
 const brokerRoutes = require("./routes/brokers");
-
+const trades = require('./routes/trades');
+// Middleware
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/brokers", brokerRoutes);
+app.use("/api/trades", trades);
 
 // Add this middleware to log unhandled errors
 app.use((err, req, res, next) => {

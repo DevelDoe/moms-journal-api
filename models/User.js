@@ -1,7 +1,7 @@
 // models/User.js
 
 const mongoose = require("mongoose");
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 
 // Define the User schema
 const UserSchema = new mongoose.Schema({
@@ -32,12 +32,14 @@ const UserSchema = new mongoose.Schema({
 			type: { type: String, required: true },
 			number: { type: String, required: true },
 			balance: { type: Number, default: 0 },
+			broker: {
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Broker",
+			},
+			accountId: { type: mongoose.Schema.Types.ObjectId, ref: "AccountType", required: true },
+			specifications: { type: Object } // New field to store account specifications
 		},
 	],
-	broker: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: "Broker",
-	},
 	role: {
 		type: String,
 		enum: ["user", "admin"],

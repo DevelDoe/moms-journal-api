@@ -1,71 +1,69 @@
-// models/Broker.js
 const mongoose = require("mongoose");
+
+// Define the Market Data schema
+const MarketDataSchema = new mongoose.Schema({
+	name: {
+		type: String, // Market data feed name (e.g., "NYSE Tape A")
+		required: true,
+	},
+	non_professional_fee: {
+		type: Number, // Fee for non-professional users (e.g., $3.00)
+		required: true,
+	},
+	professional_fee: {
+		type: Number, // Fee for professional users (e.g., $32.50)
+		required: true,
+	},
+});
+
+// Define the Platform schema with platform-specific market data
+const PlatformSchema = new mongoose.Schema({
+	platform_name: {
+		type: String, // Platform name (e.g., "DAS Trader Pro", "Sterling Trader Pro")
+		required: true,
+	},
+	market_data: [MarketDataSchema], // Array of market data feeds for this platform
+});
 
 // Define the Account schema for brokers
 const AccountSchema = new mongoose.Schema({
 	type: {
-		type: String, // Account type (e.g., "Individual", "Corporate", "Retirement")
+		type: String,
 		required: true,
 	},
 	rate_per_share: {
-		type: Number, // Per-share rate for commission (e.g., $0.0005/share)
+		type: Number,
 		default: 0,
 	},
 	min_amount: {
-		type: Number, // Minimum commission per order (e.g., $0.50)
+		type: Number,
 		default: 0.5,
 	},
 	max_amount: {
-		type: Number, // Maximum commission per order (e.g., 1% of trade value)
+		type: Number,
 		default: 1,
 	},
 	percentage_rate: {
-		type: Number, // Percentage commission based on trade value (e.g., 0.05%)
+		type: Number,
 		default: 0.05,
 	},
-	ecn_fees: {
-		type: Number, // ECN fee for taking liquidity (e.g., $0.003/share)
-		default: 0.003,
-	},
-	inactivity_fee: {
-		type: Number, // Inactivity fee for inactive accounts (e.g., $17 per 30 days)
-		default: 17,
-	},
-	market_data_fee: {
-		type: Number, // Monthly real-time market data fee
-		default: 15,
-	},
-	platform_fee: {
-		type: Number, // Platform subscription fee
-		default: 0,
-	},
-	withdrawal_fee: {
-		type: Number, // Withdrawal wire fee
-		default: 60,
-	},
-	extended_hours_trading_fee: {
-		type: Number, // Fee for trading outside regular hours (e.g., $0.0045/share)
-		default: 0.0045,
-	},
-	minimumDeposit: {
-		type: Number, // Minimum deposit required for this account type
-		default: 0,
-	},
-	leverage: {
-		type: Number, // Leverage rate (e.g., 4:1)
-		default: 1, // Default to 1:1 (no leverage)
-	},
-	regulatory_fee: {
-		type: Number, // Admin fee per share (e.g., $0.0005)
-		default: 0.0005,
-	},
-	overnight_fee: {
-		type: String, // Could be expressed as a string (e.g., "Fed Funds Rate + 875 Basis Points")
-		default: "Fed Funds Rate + 875 Basis Points",
-	},
+	ecn_routes: [
+		{
+			name: { type: String, required: true },
+			fees: { type: Number, required: true },
+			extended_fees: { type: Number, required: true },
+		},
+	],
+	inactivity_fee: { type: Number, default: 17 },
+	market_data_fee: { type: Number, default: 15 },
+	withdrawal_fee: { type: Number, default: 60 },
+	minimumDeposit: { type: Number, default: 0 },
+	leverage: { type: Number, default: 1 },
+	regulatory_fee: { type: Number, default: 0.0005 },
+	overnight_fee: { type: String, default: "Fed Funds Rate + 875 Basis Points" },
 });
 
-// Define the Broker schema with account types
+// Define the Broker schema with account types and platform-specific market data
 const BrokerSchema = new mongoose.Schema({
 	name: {
 		type: String,
@@ -75,12 +73,13 @@ const BrokerSchema = new mongoose.Schema({
 	},
 	description: {
 		type: String,
-		default: "", // A short description of the broker
+		default: "",
 	},
 	accountTypes: [AccountSchema], // Array of account types
+	platforms: [PlatformSchema], // Array of platforms with market data feeds
 	active: {
 		type: Boolean,
-		default: true, // Broker status
+		default: true,
 	},
 });
 

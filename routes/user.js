@@ -1,6 +1,7 @@
 const express = require("express");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const Broker = require("../models/Broker");
 const router = express.Router();
 
 // @route   GET /api/user/profile
@@ -63,44 +64,93 @@ router.get("/accounts", auth, async (req, res) => {
 // @desc    Add a new account to the authenticated user's profile
 // @access  Private
 router.post("/add-account", auth, async (req, res) => {
-	const { type, number, balance } = req.body;
+    const { type, number, balance, brokerId, accountId } = req.body;
 
-	try {
-		const user = await User.findById(req.user.id);
-		if (!user) {
-			return res.status(404).json({ msg: "User not found" });
-		}
+    try {
+        // Fetch the user based on the authenticated token
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: "User not found" });
+        }
 
-		const newAccount = { type, number, balance };
-		user.accounts.push(newAccount);
+        // Ensure required fields are present
+        if (!brokerId || !accountId || !number) {
+            return res.status(400).json({ msg: "Broker ID, Account ID, and Account Number are required." });
+        }
 
-		await user.save();
-		res.json(user); // Return updated user data
-	} catch (err) {
-		console.error("Error adding account:", err.message);
-		res.status(500).send("Server error");
-	}
+        // Fetch the broker to get account specifications
+        const broker = await Broker.findById(brokerId);
+        if (!broker) {
+            return res.status(404).json({ msg: "Broker not found" });
+        }
+
+        // Find the account type specifications based on accountId
+        const accountTypeDetails = broker.accountTypes.find((accountType) => accountType._id.toString() === accountId);
+        if (!accountTypeDetails) {
+            return res.status(404).json({ msg: "Account type not found in the broker." });
+        }
+
+        // Construct the new account object with specifications
+        const newAccount = {
+            type: accountTypeDetails.type, // Using account type name from specifications
+            number, // Account number
+            balance: balance || 0, // Account balance, default to 0 if not provided
+            broker: brokerId, // Broker ID reference
+            accountId, // Include account ID for reference
+            specifications: accountTypeDetails // Include specifications
+        };
+
+        // Check if the user already has this account number to avoid duplicates
+        const accountExists = user.accounts.some(account => account.number === newAccount.number);
+        if (accountExists) {
+            return res.status(400).json({ msg: "An account with this number already exists." });
+        }
+
+        // Push new account to user's accounts
+        user.accounts.push(newAccount);
+
+        // Save the updated user with the new account
+        await user.save(); // Save updated user
+
+        // Return the newly added account object
+        res.status(201).json(newAccount);
+    } catch (err) {
+        console.error("Error adding account:", err.message);
+        res.status(500).send("Server error");
+    }
 });
 
-// @route   DELETE /api/user/remove-account/:accountNumber
-// @desc    Remove an account from the user's profile
+
+
+
+ 
+
+// @route   DELETE /api/user/remove-account/:accountId
+// @desc    Remove an account from the user's profile by account ID
 // @access  Private
-router.delete("/remove-account/:accountNumber", auth, async (req, res) => {
-	try {
-		const user = await User.findById(req.user.id);
-		if (!user) {
-			return res.status(404).json({ msg: "User not found" });
-		}
+router.delete("/remove-account/:accountId", auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: "User not found" });
+        }
 
-		// Filter out the account to be removed
-		user.accounts = user.accounts.filter((acc) => acc.number !== req.params.accountNumber);
+        // Check if the account with the given _id exists
+        const accountExists = user.accounts.some((acc) => acc._id.toString() === req.params.accountId);
+        if (!accountExists) {
+            return res.status(400).json({ msg: "Account not found" });
+        }
 
-		await user.save();
-		res.json(user); // Return updated user data
-	} catch (err) {
-		console.error("Error removing account:", err.message);
-		res.status(500).send("Server error");
-	}
+        // Filter out the account to be removed by _id
+        user.accounts = user.accounts.filter((acc) => acc._id.toString() !== req.params.accountId);
+
+        await user.save();
+        res.json(user); // Return updated user data
+    } catch (err) {
+        console.error("Error removing account:", err.message);
+        res.status(500).send("Server error");
+    }
 });
+
 
 module.exports = router;

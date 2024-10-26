@@ -11,11 +11,7 @@ db.orders.drop()
 db.orders.find().pretty()
 
 
-
-start mongo with replica
-mongod --replSet rs0 --dbpath "C:/Program Files/MongoDB/Server/4.0/data"
-
-Add the Replica Set Configuration:
+## Add the Replica Set Configuration:
 
 Look for the section labeled replication. If it doesn’t exist, you can add it yourself. Modify or add the following:
 yaml
@@ -36,3 +32,23 @@ bash
 
 net stop MongoDB
 net start MongoDB
+
+### start mongo with replica
+mongod --replSet rs0 --dbpath "C:/Program Files/MongoDB/Server/4.0/data"
+mongod --replSet rs0 --dbpath "D:\coding\24\mongod\data"
+
+
+Steps to Configure the Replica Set:
+Connect to the MongoDB shell: Open a new terminal or command prompt and run the MongoDB shell:
+
+mongo
+
+Initialize the replica set: Once inside the MongoDB shell, initialize the replica set with the following command:
+
+
+rs.initiate()
+
+Verify the replica set status: After initiating, you can check the status with:
+
+
+rs.status()
