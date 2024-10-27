@@ -5,25 +5,39 @@ const auth = require('../middleware/auth');
 const TradeSummary = require("../models/TradeSummary");
 
 // @route   GET /api/trades
-// @desc    Get all trades for the authenticated user
+// @desc    Get all trades for the authenticated user, optionally filtered by date range
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        // Find all trades for the authenticated user
-        const trades = await Trade.find({ user: req.user.id }).sort({ date: -1 });
+        const { start, end } = req.query;
 
-        // If no trades found, return a message
+        // Build the date range filter if start or end dates are provided
+        let dateFilter = {};
+        if (start) dateFilter.$gte = new Date(start);
+        if (end) dateFilter.$lte = new Date(end);
+
+        // Construct the filter object with optional date filtering
+        const filter = {
+            user: req.user.id,
+            ...(start || end ? { date: dateFilter } : {}), // Apply date filter only if start or end is present
+        };
+
+        // Fetch trades with the filter applied
+        const trades = await Trade.find(filter).sort({ date: -1 });
+
+        // If no trades are found, return a message
         if (!trades || trades.length === 0) {
-            return res.status(404).json({ msg: 'No trades found.' });
+            return res.status(404).json({ msg: 'No trades found within the specified date range.' });
         }
 
-        // Return the trades in the response
+        // Return the filtered trades in the response
         res.json(trades);
     } catch (err) {
         console.error("Error fetching trades:", err.message);
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 // @route   GET /api/trades/historical
 // @desc    Get trade orders from the last 7 days for the authenticated user
