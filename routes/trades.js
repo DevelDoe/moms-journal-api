@@ -11,10 +11,17 @@ router.get('/', auth, async (req, res) => {
     try {
         const { start, end } = req.query;
 
-        // Build the date range filter if start or end dates are provided
         let dateFilter = {};
-        if (start) dateFilter.$gte = new Date(start); // Inclusive start date
-        if (end) dateFilter.$lte = new Date(end); // Inclusive end date
+        if (start) {
+            const startDate = new Date(start);
+            startDate.setHours(0, 0, 0, 0); // Set to start of day
+            dateFilter.$gte = startDate;
+        }
+        if (end) {
+            const endDate = new Date(end);
+            endDate.setHours(23, 59, 59, 999); // Set to end of day
+            dateFilter.$lte = endDate;
+        }
 
         // Construct the filter object with optional date filtering
         const filter = {
@@ -37,6 +44,7 @@ router.get('/', auth, async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 
 
