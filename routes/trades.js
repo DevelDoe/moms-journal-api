@@ -13,8 +13,8 @@ router.get('/', auth, async (req, res) => {
 
         // Build the date range filter if start or end dates are provided
         let dateFilter = {};
-        if (start) dateFilter.$gte = new Date(start);
-        if (end) dateFilter.$lte = new Date(end);
+        if (start) dateFilter.$gte = new Date(start); // Inclusive start date
+        if (end) dateFilter.$lte = new Date(end); // Inclusive end date
 
         // Construct the filter object with optional date filtering
         const filter = {
@@ -37,6 +37,7 @@ router.get('/', auth, async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 
 // @route   GET /api/trades/historical
