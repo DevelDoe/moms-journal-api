@@ -1,7 +1,7 @@
 @echo off
 :: Set the MongoDB path and backup directory
-set MONGO_PATH="D:\coding\24\vue\moms\mongo_db"  :: Update this path to your MongoDB installation
-set BACKUP_DIR=D:\coding\24\vue\moms\mongo_backups
+set MONGO_PATH=D:\coding\24\vue\moms\mongo_db 
+set BACKUP_DIR=D:\coding\24\vue\moms\mongo_db\mongo_backups
 
 :: Get the current date in YYYY-MM-DD format
 for /f "tokens=1-3 delims=-/ " %%a in ("%date%") do set CUR_DATE=%%c-%%a-%%b
