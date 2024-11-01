@@ -3,6 +3,15 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
+// Define the Account schema as an embedded subdocument
+const AccountSchema = new mongoose.Schema({
+	type: {
+		type: String,
+		enum: ["live", "paper"],
+		required: true,
+	},
+});
+
 // Define the User schema
 const UserSchema = new mongoose.Schema({
 	name: {
@@ -26,6 +35,7 @@ const UserSchema = new mongoose.Schema({
 		enum: ["user", "admin"],
 		default: "user", // Default role is 'user'
 	},
+	accounts: [AccountSchema], // Array of accounts
 });
 
 UserSchema.pre("save", async function (next) {

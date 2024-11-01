@@ -1,9 +1,13 @@
-// utils/calculateSummary.js
-
 const moment = require('moment');
 
-// Helper function to calculate the trade summary
-function calculateSummary(trades) {
+/**
+ * Helper function to calculate the trade summary
+ *
+ * @param {Array} trades - The list of trades to summarize
+ * @param {String} accountId - The ID of the account associated with these trades
+ * @returns {Array} - List of summarized trade data by date
+ */
+function calculateSummary(trades, accountId) {
     const tradesByDate = trades.reduce((acc, trade) => {
         const tradeDate = moment(trade.date).format('YYYY-MM-DD');
         if (!acc[tradeDate]) acc[tradeDate] = [];
@@ -25,6 +29,7 @@ function calculateSummary(trades) {
 
         summaries.push({
             date: tradeDate,
+            accountId, // Associate summary with account
             totalProfitLoss,
             accuracy,
             profitToLossRatio,

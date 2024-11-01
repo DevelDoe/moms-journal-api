@@ -26,6 +26,10 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  accountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
   batchHash: {
     type: String,
     required: true, // Store the batch hash

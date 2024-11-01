@@ -22,18 +22,17 @@ function generateBatchHash(orders) {
 router.post("/", auth, async (req, res) => {
 	try {
 		// Ensure collections are created before starting the transaction
-		await Promise.all([
-			Order.init(),
-			Trade.init(),
-			TradeSummary.init(),
-		]);
+		await Promise.all([Order.init(), Trade.init(), TradeSummary.init()]);
 
 		const session = await mongoose.startSession();
 		session.startTransaction();
 
+
 		try {
+
 			const orders = req.body.orders;
 			if (!Array.isArray(orders) || orders.length === 0) {
+				console.error("No orders provided.");
 				throw new Error("No orders provided.");
 			}
 
@@ -51,17 +50,19 @@ router.post("/", auth, async (req, res) => {
 				symbol: order.symbol,
 				date: order.date,
 				user: req.user.id,
+				accountId: new mongoose.Types.ObjectId(order.accountId), // Associate order with account
 				batchHash: batchHash,
 			}));
 
 			await Order.insertMany(newOrders, { session });
 
 			// After orders are inserted, calculate trades based on the orders
-			const trades = calculateTrades(newOrders);
+			const trades = calculateTrades(newOrders, new mongoose.Types.ObjectId(req.body.accountId)); // Pass accountId here
 
 			// Save calculated trades in the Trade collection
 			const newTrades = trades.map((trade) => ({
 				user: req.user.id,
+				accountId: new mongoose.Types.ObjectId(trade.accountId), // Associate trade with account
 				symbol: trade.symbol,
 				side: trade.side,
 				quantity: trade.quantity,
@@ -81,6 +82,7 @@ router.post("/", auth, async (req, res) => {
 			// Save each summary in the TradeSummary collection
 			const newSummaries = summaries.map((summary) => ({
 				user: req.user.id,
+				accountId: new mongoose.Types.ObjectId(summary.accountId), // Associate summary with account
 				date: summary.date,
 				totalProfitLoss: summary.totalProfitLoss,
 				accuracy: summary.accuracy,
@@ -95,7 +97,7 @@ router.post("/", auth, async (req, res) => {
 			await session.commitTransaction();
 			res.status(201).json({
 				message: "Orders saved successfully.",
-				trades: newTrades,  // Send back the trades
+				trades: newTrades, // Send back the trades
 			});
 		} catch (err) {
 			await session.abortTransaction();

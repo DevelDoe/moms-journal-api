@@ -4,11 +4,16 @@ const Schema = mongoose.Schema;
 const TradeSummarySchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
-        ref: 'users',
+        ref: 'User',
+        required: true,
+    },
+    accountId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Account',  // Assuming you have an Account model
         required: true,
     },
     date: {
-        type: String, // We will use a string in the format "YYYY-MM-DD" for easy filtering
+        type: String, // Using "YYYY-MM-DD" format for filtering
         required: true,
     },
     totalProfitLoss: {

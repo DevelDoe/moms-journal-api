@@ -3,9 +3,10 @@
  * It detects buy/sell pairs and calculates profits/losses for each completed trade.
  *
  * @param {Array} orders - The list of orders for trade calculation
+ * @param {String} accountId - The ID of the account associated with these orders
  * @returns {Array} - List of calculated trades
  */
-function calculateTrades(orders) {
+function calculateTrades(orders, accountId) {
 	// Sort orders by date to ensure trades are calculated in the correct sequence
 	orders.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -37,6 +38,7 @@ function calculateTrades(orders) {
 
 				// Record the trade details for short covering
 				trades.push({
+					accountId,  // Associate trade with account
 					symbol: order.symbol,
 					quantity: quantityToCover,
 					shortPrice: currentPosition.avgPrice,
@@ -77,6 +79,7 @@ function calculateTrades(orders) {
 
 				// Record the trade details for long sell
 				trades.push({
+					accountId,  // Associate trade with account
 					symbol: order.symbol,
 					quantity: quantityToSell,
 					buyPrice: currentPosition.avgPrice,

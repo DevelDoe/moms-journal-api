@@ -40,4 +40,41 @@ router.put("/update-profile", auth, async (req, res) => {
 	}
 });
 
+// @route   POST /api/user/account
+// @desc    Add a new account to the user's profile
+// @access  Private
+router.post("/account", auth, async (req, res) => {
+	const { type } = req.body;
+
+	// Ensure type is provided and valid
+	if (!type || !["live", "paper"].includes(type)) {
+		return res.status(400).json({ message: "Invalid account type" });
+	}
+
+	try {
+		// Find the user by ID
+		let user = await User.findById(req.user.id);
+
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		// Create new account object
+		const newAccount = { type };
+
+		// Add the new account to the user's accounts array
+		user.accounts.push(newAccount);
+
+		// Save the updated user
+		await user.save();
+
+		// Return the updated user data without the password
+		res.json(await User.findById(req.user.id).select("-password"));
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send("Server error");
+	}
+});
+
+
 module.exports = router;

@@ -7,6 +7,10 @@ const TradeSchema = new Schema({
         ref: 'User',
         required: true
     },
+    accountId: {
+        type: Schema.Types.ObjectId,
+        required: true
+    },
     symbol: {
         type: String,
         required: true
