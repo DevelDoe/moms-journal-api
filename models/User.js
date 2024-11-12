@@ -36,6 +36,10 @@ const UserSchema = new mongoose.Schema({
 		default: "user", // Default role is 'user'
 	},
 	accounts: [AccountSchema], // Array of accounts
+    refreshToken: {
+		type: String,
+		default: null, // This will store the refresh token when the user logs in
+	},
 });
 
 UserSchema.pre("save", async function (next) {

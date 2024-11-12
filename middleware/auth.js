@@ -1,9 +1,11 @@
+// /middleware/auth.js
 const jwt = require("jsonwebtoken");
 const User = require("../models/User"); // Import User model for role check
 
 module.exports = async function (req, res, next) {
     // Check if JWT_SECRET is defined
     if (!process.env.JWT_SECRET) {
+        console.log("JWT_SECRET value in auth middleware:", process.env.JWT_SECRET);
         console.error("Error: Missing JWT_SECRET in environment variables.");
         return res.status(500).json({ msg: "Server configuration error" });
     }
@@ -21,6 +23,7 @@ module.exports = async function (req, res, next) {
     }
 
     try {
+        
         // Verify and decode the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
@@ -31,6 +34,7 @@ module.exports = async function (req, res, next) {
             return res.status(404).json({ msg: "User not found" });
         }
 
+        // Attach the full user document to req.user
         req.user = user;
 
         next();
