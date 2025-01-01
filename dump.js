@@ -1,115 +1,177 @@
-/**
- * This function calculates trades based on the given orders.
- * It detects buy/sell pairs and calculates profits/losses for each completed trade.
- *
- * @param {Array} orders - The list of orders for trade calculation
- * @returns {Array} - List of calculated trades
- */
-function calculateTrades(orders) {
-	// Sort orders by date to ensure trades are calculated in the correct sequence
-	orders.sort((a, b) => new Date(a.date) - new Date(b.date));
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const authMiddleware = require("../middleware/auth");
 
-	const trades = []; // Array to hold calculated trade details
-	const positions = {}; // Track positions by symbol to calculate P&L accurately
+const router = express.Router();
 
-	for (const order of orders) {
-		const key = order.symbol; // Use the symbol as the unique key to track each position
+// Utility functions to generate tokens
+const generateAccessToken = (user) => {
+    return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" }); // Short expiration for access token
+};
 
-		// Initialize tracking for each new symbol if it doesn't already exist
-		if (!positions[key]) {
-			positions[key] = {
-				avgPrice: 0, // Average price of the current position
-				position: 0, // Quantity of shares in the current position
-			};
-		}
+const generateRefreshToken = (user) => {
+    return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" }); // Longer expiration for refresh token
+};
 
-		const currentPosition = positions[key]; // Reference to the current position data for the symbol
+// @route   POST /api/auth/register
+// @desc    Register a new user
+// @access  Public
+router.post("/register", async (req, res) => {
+    const { name, email, password } = req.body;
 
-		// Handle Buy or BOT orders (Opening or adding to a long position, or covering a short)
-		if (order.side.toLowerCase() === "buy" || order.side === "BOT") {
-			if (currentPosition.position < 0) {
-				// Case: Covering a short position (current position is negative)
-				let quantityToCover = Math.min(-currentPosition.position, order.quantity); // Cover as much as available
-				let remainingQuantity = order.quantity - quantityToCover;
+    try {
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: "User already exists" });
+        }
 
-				// Calculate profit/loss for covering shorts
-				const profitLoss = (currentPosition.avgPrice - order.price) * quantityToCover;
+        // Create a new user
+        user = new User({ name, email, password });
+        await user.save();
 
-				// Record the trade details for short covering
-				trades.push({
-					symbol: order.symbol,
-					quantity: quantityToCover,
-					shortPrice: currentPosition.avgPrice,
-					coverPrice: order.price,
-					side: "short_cover",
-					date: order.date,
-					profitLoss: profitLoss,
-				});
+        // Generate JWT token
+        const token = generateToken(user);
+        res.json({
+            token,
+            user: { id: user._id, name: user.name, email: user.email },
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
 
-				// Update the position by reducing the short position
-				currentPosition.position += quantityToCover;
+// @route   POST /api/auth/login
+// @desc    Login user and return JWT
+// @access  Public
+router.post("/login", async (req, res) => {
+    const { email, password } = req.body;
 
-				// If there's remaining quantity in the buy order, establish or add to a new long position
-				if (remainingQuantity > 0) {
-					currentPosition.avgPrice = order.price;
-					currentPosition.position += remainingQuantity;
-				}
-			} else {
-				// Case: Adding to an existing long position or creating a new one
-				const newTotalQuantity = currentPosition.position + order.quantity;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
 
-				// Calculate the new average price of the long position
-				currentPosition.avgPrice = (currentPosition.avgPrice * currentPosition.position + order.price * order.quantity) / newTotalQuantity;
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
 
-				// Update the position quantity
-				currentPosition.position = newTotalQuantity;
-			}
-		}
-		// Handle Sell or SLD orders (Selling from a long position or initiating/adding to a short position)
-		else if (order.side.toLowerCase() === "sell" || order.side === "SLD") {
-			if (currentPosition.position > 0) {
-				// Case: Selling from an existing long position
-				let quantityToSell = Math.min(currentPosition.position, order.quantity); // Sell as much as available
-				let remainingQuantity = order.quantity - quantityToSell;
+        // Generate tokens
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
 
-				// Calculate profit/loss for selling from the long position
-				const profitLoss = (order.price - currentPosition.avgPrice) * quantityToSell;
+        // Store the refresh token in the database
+        user.refreshToken = refreshToken;
+        await user.save();
 
-				// Record the trade details for long sell
-				trades.push({
-					symbol: order.symbol,
-					quantity: quantityToSell,
-					buyPrice: currentPosition.avgPrice,
-					sellPrice: order.price,
-					side: "long_sell",
-					date: order.date,
-					profitLoss: profitLoss,
-				});
+        // Set the refresh token in an HTTP-only cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
 
-				// Update the position by reducing the long position
-				currentPosition.position -= quantityToSell;
+        // Send access token and user data
+        res.json({
+            accessToken,
+            user: { id: user._id, name: user.name, email: user.email, role: user.role, accounts: user.accounts },
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
-				// If there's remaining quantity in the sell order, initiate a short position
-				if (remainingQuantity > 0) {
-					currentPosition.avgPrice = order.price;
-					currentPosition.position -= remainingQuantity;
-				}
-			} else {
-				// Case: Initiating or adding to a short position (current position is zero or negative)
-				const newTotalQuantity = currentPosition.position - order.quantity;
+// @route   POST /api/auth/refresh-token
+// @desc    Generate a new access token using a valid refresh token
+// @access  Public
+router.post("/refresh-token", async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
 
-				// Calculate the new average price of the short position
-				currentPosition.avgPrice =
-					(Math.abs(currentPosition.avgPrice * currentPosition.position) + order.price * order.quantity) / Math.abs(newTotalQuantity);
+    if (!refreshToken) {
+        return res.status(401).json({ message: "No refresh token provided" });
+    }
 
-				// Update the position to reflect the increased short position
-				currentPosition.position = newTotalQuantity;
-			}
-		}
-	}
+    try {
+        // Verify the refresh token
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.id);
 
-	// Return the array of completed trades with profit/loss details
-	return trades;
-}
+        if (!user || user.refreshToken !== refreshToken) {
+            return res.status(403).json({ message: "Invalid refresh token" });
+        }
 
-module.exports = calculateTrades;
+        // Generate new tokens
+        const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        // Save the new refresh token in the database
+        user.refreshToken = newRefreshToken;
+        await user.save();
+
+        // Update the refresh token cookie
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        // Send new access token
+        res.json({ accessToken: newAccessToken });
+    } catch (err) {
+        console.error("Error during token refresh:", err.message);
+        return res.status(403).json({ message: "Refresh token expired or invalid" });
+    }
+});
+
+
+// @route   POST /api/auth/logout
+// @desc    Log the user out and invalidate refresh token
+// @access  Private
+router.post("/logout", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+            user.refreshToken = null; // Remove refresh token
+            await user.save();
+        }
+
+        // Clear the refresh token cookie
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+        });
+
+        res.status(200).json({ message: "Logged out successfully" });
+    } catch (err) {
+        console.error("Error during logout:", err.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+// @route   GET /api/user/profile
+// @desc    Fetch user profile
+// @access  Private
+router.get("/profile", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password -refreshToken");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ user });
+    } catch (err) {
+        console.error("Error fetching profile:", err.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+module.exports = router;

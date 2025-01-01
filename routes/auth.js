@@ -1,16 +1,17 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 
 // Utility functions to generate tokens
 const generateAccessToken = (user) => {
-    return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" }); // Short expiration for access token
+    return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "5m" }); // Short expiration for access token
 };
 
 const generateRefreshToken = (user) => {
-    return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" }); // Longer expiration for refresh token
+    return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7h" }); // Longer expiration for refresh token
 };
 
 // @route   POST /api/auth/register
@@ -29,17 +30,32 @@ router.post("/register", async (req, res) => {
         user = new User({ name, email, password });
         await user.save();
 
-        // Generate JWT token
-        const token = generateToken(user);
+        // Generate tokens
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        // Save refresh token
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        // Set the refresh token in an HTTP-only cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
         res.json({
-            token,
+            accessToken,
             user: { id: user._id, name: user.name, email: user.email },
         });
     } catch (err) {
-        console.error(err.message);
+        console.error("Registration error:", err.message);
         res.status(500).send("Server error");
     }
 });
+
 
 // @route   POST /api/auth/login
 // @desc    Login user and return JWT
@@ -66,15 +82,22 @@ router.post("/login", async (req, res) => {
         user.refreshToken = refreshToken;
         await user.save();
 
-        // Send tokens to client
+        // Set the refresh token in an HTTP-only cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        // Send access token and user data
         res.json({
             accessToken,
-            refreshToken,
             user: { id: user._id, name: user.name, email: user.email, role: user.role, accounts: user.accounts },
         });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("Server error");
+        res.status(500).json({ message: "Server error" });
     }
 });
 
@@ -82,30 +105,90 @@ router.post("/login", async (req, res) => {
 // @desc    Generate a new access token using a valid refresh token
 // @access  Public
 router.post("/refresh-token", async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
 
-    // Check if refresh token is provided
+    console.log("Received refresh token request. Cookies:", req.cookies);
+
     if (!refreshToken) {
+        console.log("No refresh token provided.");
         return res.status(401).json({ message: "No refresh token provided" });
     }
 
     try {
-        // Verify the refresh token
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        console.log("Decoded refresh token:", decoded);
 
-        // Find the user associated with this token
         const user = await User.findById(decoded.id);
         if (!user || user.refreshToken !== refreshToken) {
+            console.log("Invalid refresh token for user:", user);
             return res.status(403).json({ message: "Invalid refresh token" });
         }
 
-        // Generate a new access token
         const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
+
+        user.refreshToken = newRefreshToken;
+        await user.save();
+
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        console.log("New access token issued:", newAccessToken);
         res.json({ accessToken: newAccessToken });
     } catch (err) {
-        console.error("Error during token refresh:", err);
+        console.error("Error during token refresh:", err.message);
         return res.status(403).json({ message: "Refresh token expired or invalid" });
     }
 });
+
+
+
+// @route   POST /api/auth/logout
+// @desc    Log the user out and invalidate refresh token
+// @access  Private
+router.post("/logout", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+            user.refreshToken = null; // Remove refresh token
+            await user.save();
+        }
+
+        // Clear the refresh token cookie
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+        });
+
+        res.status(200).json({ message: "Logged out successfully" });
+    } catch (err) {
+        console.error("Error during logout:", err.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+// @route   GET /api/user/profile
+// @desc    Fetch user profile
+// @access  Private
+router.get("/profile", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password -refreshToken");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ user });
+    } catch (err) {
+        console.error("Error fetching profile:", err.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 
 module.exports = router;

@@ -75,7 +75,7 @@ function calculateTrades(orders, accountId) {
 				let remainingQuantity = order.quantity - quantityToSell;
 
 				// Calculate profit/loss for selling from the long position
-				const profitLoss = (order.price - currentPosition.avgPrice) * quantityToSell;
+                const profitLoss = Number(((order.price - currentPosition.avgPrice) * quantityToSell).toFixed(2));
 
 				// Record the trade details for long sell
 				trades.push({

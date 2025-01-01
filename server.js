@@ -4,7 +4,8 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
-const User = require("./models/User"); // User model for checking/creating the root user
+const User = require("./models/User"); 
+const cookieParser = require("cookie-parser");
 
 dotenv.config();
 
@@ -14,8 +15,22 @@ const ROOT_ADMIN_EMAIL = "admin@example.com";
 const ROOT_ADMIN_PASSWORD = "password123"; // Hardcoded root password for initial setup
 
 // Middleware
-app.use(cors({ origin: "http://localhost:8080" })); // Allow only this origin
+app.use(
+    cors({
+        origin: "http://localhost:8080", // Allow only this origin
+        credentials: true, // Enable cookies
+    })
+);
+app.options("/auth/refresh-token", cors());
 app.use(express.json()); // Parse JSON bodies
+app.use(cookieParser());
+
+// Logging Middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log("Request Headers:", req.headers);
+    next();
+});
 
 // Connect to MongoDB
 mongoose
@@ -87,13 +102,7 @@ if (VERBOSE) {
     console.log("Verbose mode enabled");
 }
 
-// Add additional logs if needed
-if (VERBOSE) {
-    app.use((req, res, next) => {
-        console.log(`Incoming request: ${req.method} ${req.url}`);
-        next();
-    });
-}
+
 
 process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at:", promise, "reason:", reason);

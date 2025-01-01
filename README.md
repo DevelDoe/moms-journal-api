@@ -52,3 +52,8 @@ Verify the replica set status: After initiating, you can check the status with:
 
 
 rs.status()
+
+
+
+use admin  # Switch to the 'admin' database where user credentials are typically stored
+db.auth("admin", "JI21ko87.")  # Authenticate with your username and password

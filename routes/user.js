@@ -7,14 +7,19 @@ const router = express.Router();
 // @desc    Get the authenticated user's profile
 // @access  Private
 router.get("/profile", auth, async (req, res) => {
-	try {
-		const user = await User.findById(req.user.id).select("-password");
-		res.json(user);
-	} catch (err) {
-		console.error(err.message);
-		res.status(500).send("Server error");
-	}
+    try {
+        const user = await User.findById(req.user.id).select("-password -refreshToken");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json({ user });
+    } catch (err) {
+        console.error("Error fetching profile:", err.message);
+        res.status(500).json({ message: "Server error" });
+    }
 });
+
+
 
 // @route   PUT /api/auth/update-profile
 // @desc    Update user's profile information
@@ -75,6 +80,9 @@ router.post("/account", auth, async (req, res) => {
 		res.status(500).send("Server error");
 	}
 });
+
+
+
 
 
 module.exports = router;

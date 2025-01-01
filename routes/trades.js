@@ -1,13 +1,15 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Trade = require('../models/Trade');
-const auth = require('../middleware/auth');
+const Trade = require("../models/Trade");
+const auth = require("../middleware/auth");
 const TradeSummary = require("../models/TradeSummary");
+const Order = require("../models/Order");
+const mongoose = require("mongoose");
 
 // @route   GET /api/trades
 // @desc    Get all trades for the authenticated user, optionally filtered by date range
 // @access  Private
-router.get('/', auth, async (req, res) => {
+router.get("/", auth, async (req, res) => {
     try {
         const { start, end } = req.query;
 
@@ -34,7 +36,7 @@ router.get('/', auth, async (req, res) => {
 
         // If no trades are found, return a message
         if (!trades || trades.length === 0) {
-            return res.status(404).json({ msg: 'No trades found within the specified date range.' });
+            return res.status(404).json({ msg: "No trades found within the specified date range." });
         }
 
         // Return the filtered trades in the response
@@ -45,13 +47,10 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-
-
-
 // @route   GET /api/trades/historical
 // @desc    Get trade orders from the last 7 days for the authenticated user
 // @access  Private
-router.get('/historical', auth, async (req, res) => {
+router.get("/historical", auth, async (req, res) => {
     const today = new Date();
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
@@ -101,6 +100,57 @@ router.get("/summaries/filter", auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Server error");
+    }
+});
+
+// @route   DELETE /api/trades/user/:userId
+// @desc    Delete trades, trade summaries, and orders for a user within a date range
+// @access  Private (Admin only)
+router.delete("/user/:userId", auth, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { start, end } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required." });
+        }
+
+        console.log("Delete request for userId:", userId, "Dates:", { start, end });
+
+        // Build the date filter
+        const dateFilter = {};
+        if (start) dateFilter.$gte = new Date(start); // Convert start to Date
+        if (end) dateFilter.$lte = new Date(new Date(end).setHours(23, 59, 59, 999)); // Include the entire day
+
+        // Build the overall filter
+        const filter = {
+            user: new mongoose.Types.ObjectId(userId), // Use ObjectId for user field
+            ...(Object.keys(dateFilter).length ? { date: dateFilter } : {}),
+        };
+
+        console.log("Filter for deletion:", filter);
+
+        // Delete trades
+        const deletedTrades = await Trade.deleteMany(filter);
+        console.log("Deleted Trades:", deletedTrades);
+
+        // Delete summaries
+        const deletedSummaries = await TradeSummary.deleteMany(filter);
+        console.log("Deleted Summaries:", deletedSummaries);
+
+        // Delete orders
+        const deletedOrders = await Order.deleteMany(filter);
+        console.log("Deleted Orders:", deletedOrders);
+
+        res.json({
+            message: "Data deleted successfully",
+            deletedTradesCount: deletedTrades.deletedCount,
+            deletedSummariesCount: deletedSummaries.deletedCount,
+            deletedOrdersCount: deletedOrders.deletedCount,
+        });
+    } catch (err) {
+        console.error("Error deleting data:", err.message);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
