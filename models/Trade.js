@@ -44,6 +44,10 @@ const TradeSchema = new Schema({
         type: Number,
         default: null
     },
+    holdTime: {
+        type: Number, // Hold time in minutes
+        default: null
+    },
     date: {
         type: Date,
         required: true

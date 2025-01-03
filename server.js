@@ -28,7 +28,6 @@ app.use(cookieParser());
 // Logging Middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log("Request Headers:", req.headers);
     next();
 });
 

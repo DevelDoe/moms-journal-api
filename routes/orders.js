@@ -27,9 +27,7 @@ router.post("/", auth, async (req, res) => {
 		const session = await mongoose.startSession();
 		session.startTransaction();
 
-
 		try {
-
 			const orders = req.body.orders;
 			if (!Array.isArray(orders) || orders.length === 0) {
 				console.error("No orders provided.");
@@ -61,18 +59,20 @@ router.post("/", auth, async (req, res) => {
 
 			// Save calculated trades in the Trade collection
 			const newTrades = trades.map((trade) => ({
-				user: req.user.id,
-				accountId: new mongoose.Types.ObjectId(trade.accountId), // Associate trade with account
-				symbol: trade.symbol,
-				side: trade.side,
-				quantity: trade.quantity,
-				buyPrice: trade.buyPrice,
-				sellPrice: trade.sellPrice,
-				shortPrice: trade.shortPrice,
-				coverPrice: trade.coverPrice,
-				profitLoss: trade.profitLoss,
-				date: trade.date,
-			}));
+                user: req.user.id,
+                accountId: new mongoose.Types.ObjectId(trade.accountId),
+                symbol: trade.symbol,
+                side: trade.side,
+                quantity: trade.quantity,
+                buyPrice: trade.buyPrice,
+                sellPrice: trade.sellPrice,
+                shortPrice: trade.shortPrice,
+                coverPrice: trade.coverPrice,
+                profitLoss: trade.profitLoss,
+                holdTime: trade.holdTime, // Include holdTime
+                date: trade.date,
+            }));
+            
 
 			await Trade.insertMany(newTrades, { session });
 
@@ -111,6 +111,7 @@ router.post("/", auth, async (req, res) => {
 		res.status(500).json({ error: "Server error. Failed to initialize collections." });
 	}
 });
+
 
 // @route   GET /api/orders
 // @desc    Get all trade orders for the authenticated user
